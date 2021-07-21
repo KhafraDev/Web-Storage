@@ -42,7 +42,10 @@ export class Storage implements IWebStorage {
                 }
             },
             deleteProperty: (target, prop) => {
-                return delete target[prop as keyof typeof target];
+                const deleted = delete target[prop as keyof typeof target];
+                if (typeof prop === 'symbol') return deleted;
+                target.removeItem(prop);
+                return !target.#backerKMP.has(prop);
             }
         });
     }
