@@ -11,23 +11,31 @@ interface IWebStorage {
     [key: string]: any
 }
 
-export class Storage implements IWebStorage {
+export class Storage extends Function implements IWebStorage {
     #backerKMP = new Map<string | Symbol, string>();
     #backerIdx: string[] = [];
 
     [key: string]: any;
 
+    public get [Symbol.toStringTag]() {
+        return 'Storage';
+    }
+
     constructor() {
+        super();
         // https://stackoverflow.com/a/45317277/15299271
         return new Proxy(this, {
             get: (target, prop) => {
-                if (typeof prop === 'symbol') return target[prop as keyof typeof target];
-                if (['key', 'getItem', 'setItem', 'removeItem', 'clear', 'length'].includes(prop)) {
+                if (typeof prop === 'symbol') {
+                    if (prop === Symbol.toStringTag) return target[prop as keyof typeof target];
+
+                    return target[prop as keyof typeof target]
+                } else if (['key', 'getItem', 'setItem', 'removeItem', 'clear', 'length'].includes(prop)) {
                     // length is a getter
-                    if (prop === 'length') return target[prop];
+                    if (prop === 'length') return target.#backerIdx.length;
 
                     // we need to bind to target so that it can access the private key backing properties
-                    return (target[prop as keyof Storage] as (...args: unknown[]) => unknown).bind(target);
+                    return (target[prop as keyof Storage] as (...args: unknown[]) => unknown)?.bind(target);
                 }
 
                 return target.getItem(prop) || undefined;
@@ -50,10 +58,6 @@ export class Storage implements IWebStorage {
         });
     }
 
-    public get length(): number {
-        return this.#backerIdx.length;
-    }
-
     public key(index: number): string | null {
         if (typeof index === 'number') {
             return this.#backerIdx[index] || null;
@@ -63,27 +67,39 @@ export class Storage implements IWebStorage {
     }
 
     public getItem(key: string): string | null {
-        return this.#backerKMP.get(`${key}`) || null;
+        key = `${key}`;
+        return this.#backerKMP.get(key) || null;
     }
 
     public setItem(key: string, value: string): void {
-        const idx = this.#backerIdx.findIndex((v) => v === `${key}`);
+        if (arguments.length < 2)
+            throw new TypeError('Storage.setItem: At least 2 arguments required, but only 1 passed');
+
+        key = `${key}`;
+        value = `${value}`;
+        const idx = this.#backerIdx.findIndex((v) => v === key);
+
         if (idx === -1) {
-            this.#backerIdx.push(`${key}`);
-            this.#backerKMP.set(`${key}`, `${value}`);
+            this.#backerIdx.push(key);
+            this.#backerKMP.set(key, value);
         } else {
-            this.#backerIdx.splice(idx, 1, `${key}`);
-            this.#backerKMP.set(`${key}`, `${value}`);
+            this.#backerIdx.splice(idx, 1, key);
+            this.#backerKMP.set(key, value);
         }
     }
 
     public removeItem(key: string): void {
-        const idx = this.#backerIdx.findIndex((v) => v === `${key}`);
+        if (arguments.length < 1)
+            throw new TypeError('Storage.removeItem: At least 1 argument required, but only 0 passed');
+            
+        key = `${key}`;
+        const idx = this.#backerIdx.findIndex((v) => v === key);
+
         if (idx === -1) {
             return;
         } else {
             this.#backerIdx.splice(idx, 1);
-            this.#backerKMP.delete(`${key}`);
+            this.#backerKMP.delete(key);
         }
     }
 
