@@ -7,35 +7,6 @@ const toString = Object.prototype.toString;
 describe('<Storage> class tests', () => {
     afterEach(() => storage.clear());
 
-    test('using "magic keys" to set, get, and delete works', () => {
-        const symbol = Symbol('jest');
-        const stringKey = 'testing';
-        const otherKey = { a: 'b' };
-
-        // setting symbol keys to string or other types
-        expect(storage[symbol] = stringKey).toEqual(stringKey);
-        expect(storage[symbol] = otherKey).toEqual(otherKey);
-        expect(() => storage[symbol] = symbol).not.toThrow();
-        // setting string keys to different values
-        expect(storage[stringKey] = stringKey).toEqual(stringKey);
-        expect(storage[stringKey] = otherKey).toEqual(otherKey);
-        // setting the key returns the original, getting it returns the stringified
-        expect(storage[stringKey]).toEqual(toString.call(otherKey));
-        expect(() => storage[stringKey] = symbol).toThrow(TypeError);
-
-        // symbols are not added using <Storage>.setItem, and do not count towards the length
-        // string keys, on the other hand, do count when setting "magic keys"
-        expect(storage.length).toEqual(1);
-
-        // deleting a symbol key
-        expect(delete storage[symbol]).toEqual(true);
-        expect(storage[symbol]).toBe(undefined);
-        // deleting a key string
-        expect(delete storage[stringKey]).toEqual(true);
-        expect(storage[stringKey]).toBe(undefined);
-        expect(storage.length).toEqual(0);
-    });
-
     test('<Storage>.setItem', () => {
         const obj = { a: '1' };
 
@@ -70,6 +41,7 @@ describe('<Storage> class tests', () => {
         }
 
         expect(() => storage.removeItem('nonexistent')).not.toThrow();
+        expect(storage.removeItem('nonexistent')).toBeUndefined();
         expect(() => storage.removeItem({})).not.toThrow();
         expect(() => storage.removeItem()).toThrow(TypeError);
         expect(() => storage.removeItem(undefined)).not.toThrow(TypeError);
@@ -82,6 +54,8 @@ describe('<Storage> class tests', () => {
             storage.setItem(key, Math.random().toString(36));
             expect(storage.key(i)).toEqual(key);
         }
+
+        expect(storage.key(1000)).toBeNull();
     });
 
     test('<Storage>.length', () => {
@@ -95,9 +69,5 @@ describe('<Storage> class tests', () => {
 
     test('<Storage>.[Symbol.toStringTag]', () => {
         expect(toString.call(storage)).toEqual('[object Storage]');
-    });
-
-    test('<Storage>.prototype', () => {
-        expect(Object.getPrototypeOf(Storage)).toEqual(Function);
     });
 });

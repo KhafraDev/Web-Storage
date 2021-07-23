@@ -8,67 +8,41 @@ interface IWebStorage {
     setItem(key: string, value: string): void;
     removeItem(key: string): void;
     clear(): void;
-    [key: string]: any
 }
 
-export class Storage extends Function implements IWebStorage {
-    #backerKMP = new Map<string | Symbol, string>();
-    #backerIdx: string[] = [];
+export class Storage extends Object implements IWebStorage {
+    #backerKMP = new Map<string, string>();
 
-    [key: string]: any;
-
-    public get [Symbol.toStringTag]() {
+    public get [Symbol.toStringTag](): string {
         return 'Storage';
     }
 
-    constructor() {
-        super();
-        // https://stackoverflow.com/a/45317277/15299271
-        return new Proxy(this, {
-            get: (target, prop) => {
-                if (typeof prop === 'symbol') {
-                    if (prop === Symbol.toStringTag) return target[prop as keyof typeof target];
-
-                    return target[prop as keyof typeof target]
-                } else if (['key', 'getItem', 'setItem', 'removeItem', 'clear', 'length'].includes(prop)) {
-                    // length is a getter
-                    if (prop === 'length') return target.#backerIdx.length;
-
-                    // we need to bind to target so that it can access the private key backing properties
-                    return (target[prop as keyof Storage] as (...args: unknown[]) => unknown)?.bind(target);
-                }
-
-                return target.getItem(prop) || undefined;
-            },
-            set: (target, prop, value) => {
-                if (typeof prop === 'symbol') {
-                    // https://github.com/Microsoft/TypeScript/issues/24587
-                    return target[prop as keyof typeof target] = value;
-                } else {
-                    target.setItem(prop, value);
-                    return target.#backerKMP.has(prop);
-                }
-            },
-            deleteProperty: (target, prop) => {
-                const deleted = delete target[prop as keyof typeof target];
-                if (typeof prop === 'symbol') return deleted;
-                target.removeItem(prop);
-                return !target.#backerKMP.has(prop);
-            }
-        });
+    public get length(): number {
+        // "The length getter steps are to return this's map's size."
+        return this.#backerKMP.size;
     }
 
     public key(index: number): string | null {
-        if (typeof index === 'number') {
-            return this.#backerIdx[index] || null;
-        } else {            
-            return this.#backerIdx[0] || null;
-        }
+        // 1. If index is greater than or equal to this's map's size, then return null.
+        if (index > this.length) return null;
+
+        // 2. Let keys be the result of running get the keys on this's map.
+        // - To get the keys of an ordered map, return a new ordered set whose items are each of the keys in the map’s entries. 
+        // - An ordered set is a list with the additional semantic that it must not contain the same item twice. 
+        const keys = [...this.#backerKMP.keys()];
+        
+        // 3. Return keys[index].
+        return keys[index]!;
     }
 
     public getItem(key: string): string | null {
+        // standard browser implementation
         key = `${key}`;
-        return this.#backerKMP.get(key) || null;
+        // 1. If this's map[key] does not exist, then return null.
+        if (!this.#backerKMP.has(key)) return null;
+        
+        // 2. Return this's map[key].
+        return this.#backerKMP.get(key)!;
     }
 
     public setItem(key: string, value: string): void {
@@ -77,34 +51,59 @@ export class Storage extends Function implements IWebStorage {
 
         key = `${key}`;
         value = `${value}`;
-        const idx = this.#backerIdx.findIndex((v) => v === key);
 
-        if (idx === -1) {
-            this.#backerIdx.push(key);
-            this.#backerKMP.set(key, value);
-        } else {
-            this.#backerIdx.splice(idx, 1, key);
-            this.#backerKMP.set(key, value);
+        // 1. Let oldValue be null.
+        let oldValue = null;
+        // TODO: 2. Let reorder be true.
+        // let reorder = true;
+
+        // 3. If this's map[key] exists:
+        // - An ordered map contains an entry with a given key if there exists an entry with that key.
+        const mapKeyExists = [...this.#backerKMP.keys()].includes(key);
+        if (mapKeyExists) {
+            // 3a. Set oldValue to this's map[key].
+            oldValue = this.getItem(key);
+            // 3b. If oldValue is value, then return.
+            if (oldValue === value) return;
+            // TODO: 3c. Set reorder to false.
+            // reorder = false;
         }
+
+        // TODO: 4. If value cannot be stored, then throw a "QuotaExceededError" DOMException exception.
+
+        // 5. Set this's map[key] to value.
+        this.#backerKMP.set(key, value);
+
+        // TODO: 6. If reorder is true, then reorder this.
+        // TODO: 7. Broadcast this with key, oldValue, and value.
     }
 
-    public removeItem(key: string): void {
+    public removeItem(key: string): void | null {
         if (arguments.length < 1)
             throw new TypeError('Storage.removeItem: At least 1 argument required, but only 0 passed');
             
         key = `${key}`;
-        const idx = this.#backerIdx.findIndex((v) => v === key);
 
-        if (idx === -1) {
+        // 1. If this's map[key] does not exist, then return null.
+        // - An ordered map contains an entry with a given key if there exists an entry with that key.
+        const mapKeyExists = [...this.#backerKMP.keys()].includes(key);
+        if (!mapKeyExists) {
+            // Browsers do not return null when a key is non-existent (Chrome/Firefox).
             return;
-        } else {
-            this.#backerIdx.splice(idx, 1);
-            this.#backerKMP.delete(key);
         }
+
+        // TODO: 2. Set oldValue to this's map[key].
+        // const oldValue = this.getItem(key);
+        // 3. Remove this's map[key].
+        this.#backerKMP.delete(key);
+
+        // TODO: 4. Reorder this.
+        // TODO: 5. Broadcast this with key, oldValue, and null.
     }
 
     public clear(): void {
-        this.#backerIdx = [];
+        // 1. Clear this's map.
         this.#backerKMP.clear();
+        // TODO: 2. Broadcast this with null, null, and null.
     }
 }
