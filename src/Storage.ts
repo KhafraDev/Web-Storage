@@ -19,6 +19,11 @@ export class Storage extends Object implements IWebStorage {
     #backerKMP = new Map<string, string>();
 
     constructor(type: 'local' | 'session') {
+        // we need to be able to construct localStorage and sessionStorage instances
+        if (typeof localStorage !== 'undefined' && typeof sessionStorage !== 'undefined') {
+            throw new TypeError('Illegal constructor');
+        }
+
         super();
 
         instances.push({ type, url: url(), storage: this });

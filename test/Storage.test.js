@@ -1,73 +1,84 @@
-import { test, expect, describe, afterEach } from '@jest/globals';
 import { Storage } from '../dist/Storage.js';
+import tap from 'tap';
 
 const storage = new Storage();
 const toString = Object.prototype.toString;
 
-describe('<Storage> class tests', () => {
-    afterEach(() => storage.clear());
+tap.test('<Storage> class tests', (t) => {
+    t.plan(6);
+    tap.afterEach(() => storage.clear());
 
-    test('<Storage>.setItem', () => {
+    t.test('<Storage>.setItem', (t) => {
+        t.plan(7);
         const obj = { a: '1' };
 
-        expect(storage.setItem('key', 'value')).toEqual(undefined); // void return
-        expect(storage.setItem('key2', obj)).toEqual(undefined);
-        expect(() => storage.setItem('key')).toThrow(TypeError); // not enough args
-        expect(() => storage.setItem('key', 'value', '1', '2', '3')).not.toThrow(); // passing extraneous args
-        expect(() => storage.setItem(Symbol('jest'), 'jest')).toThrow(TypeError); // setting a symbol key
-        expect(() => storage.setItem('jest', Symbol('jest'))).toThrow(TypeError); // setting a symbol value
+        t.equal(storage.setItem('key', 'value'), undefined, '<Storage>.setItem returns void');
+        t.equal(storage.setItem('key2', obj), undefined, '<Storage>.setItem returns void (object value)');
+        t.throws(() => storage.setItem('key'), TypeError, 'passing <2 args throws');
+        t.doesNotThrow(() => storage.setItem('key', 'value', '1', '2', '3'), 'extraneous args are ignored');
+        t.throws(() => storage.setItem(Symbol('jest'), 'jest'), TypeError, 'setting a symbol key throws');
+        t.throws(() => storage.setItem('jest', Symbol('jest')), TypeError, 'setting a symbol value throws');
 
-        expect(storage.length).toEqual(2); // key + key2
+        t.equal(storage.length, 2); // key + key2
     });
 
-    test('<Storage>.getItem', () => {
+    t.test('<Storage>.getItem', (t) => {
+        t.plan(5);
         const obj = { a: '1' };
         storage.setItem('key', 'value');
         storage.setItem('key2', obj);
 
-        expect(storage.getItem('key')).toEqual('value');
-        expect(storage.getItem('key', '2', '3', '4')).toEqual(storage.getItem('key'));
-        expect(storage.getItem('key2')).toEqual(toString.call(obj));
-        expect(storage.getItem('nonexistent')).toEqual(null);
-        expect(() => storage.getItem(Symbol('jest'))).toThrow(TypeError);
+        t.equal(storage.getItem('key'), 'value', 'getting a key returns the correct value');
+        t.equal(storage.getItem('key', '2', '3', '4'), storage.getItem('key'), 'passing >2 args ignores extraneous ones');
+        t.equal(storage.getItem('key2'), toString.call(obj), 'values are stringified');
+        t.equal(storage.getItem('nonexistent'), null, 'getting non-existent key returns null');
+        t.throws(() => storage.getItem(Symbol('jest')), TypeError, 'getting a Symbol key throws');
     });
 
-    test('<Storage>.removeItem', () => {
+    t.test('<Storage>.removeItem', (t) => {
+        t.plan(206);
+
         for (let i = 0; i < 100; i++) {
             storage.setItem(`key${i}`, `value${i}`);
-            expect(storage.getItem(`key${i}`)).toBeDefined();
+            t.strictNotSame(storage.getItem(`key${i}`), undefined);
             storage.removeItem(`key${i}`);
-            expect(storage.getItem(`key${i}`)).toBeNull();
+            t.equal(storage.getItem(`key${i}`), null);
         }
 
-        expect(() => storage.removeItem('nonexistent')).not.toThrow();
-        expect(storage.removeItem('nonexistent')).toBeUndefined();
-        expect(() => storage.removeItem({})).not.toThrow();
-        expect(() => storage.removeItem()).toThrow(TypeError);
-        expect(() => storage.removeItem(undefined)).not.toThrow(TypeError);
-        expect(() => storage.removeItem('1', '2', '3', '4')).not.toThrow();
+        t.doesNotThrow(() => storage.removeItem('nonexistent'), 'does not throw when removing non-existent key');
+        t.equal(storage.removeItem('nonexistent'), undefined, '<Storage>.removeItem returns void');
+        t.doesNotThrow(() => storage.removeItem({}), 'removing a non-string key does not throw');
+        t.throws(() => storage.removeItem(), TypeError, 'passing in too few args throws');
+        t.doesNotThrow(() => storage.removeItem(undefined), TypeError, 'passing args=undefined does not throw');
+        t.doesNotThrow(() => storage.removeItem('1', '2', '3', '4'), 'passing too many args does not throw');
     });
 
-    test('<Storage>.key', () => {
+    t.test('<Storage>.key', (t) => {
+        t.plan(101);
+
         for (let i = 0; i < 100; i++) {
             const key = `key${i}`;
             storage.setItem(key, Math.random().toString(36));
-            expect(storage.key(i)).toEqual(key);
+            t.equal(storage.key(i), key);
         }
 
-        expect(storage.key(1000)).toBeNull();
+        t.equal(storage.key(1000), null, 'if a key does not exist, returns null');
     });
 
-    test('<Storage>.length', () => {
+    t.test('<Storage>.length', (t) => {
+        t.plan(1);
+
         const random = Math.floor(Math.random() * 100);
         for (let i = 0; i < random; i++) {
             storage.setItem(i, Math.random().toString(36));
         }
 
-        expect(storage.length).toEqual(random);
+        t.equal(storage.length, random, 'length is calculated correctly');
     });
 
-    test('<Storage>.[Symbol.toStringTag]', () => {
-        expect(toString.call(storage)).toEqual('[object Storage]');
+    t.test('<Storage>.[Symbol.toStringTag]', (t) => {
+        t.plan(1);
+
+        t.equal(toString.call(storage), '[object Storage]', 'Symbol.toStringTag is set');
     });
 });

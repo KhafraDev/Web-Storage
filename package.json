@@ -9,10 +9,11 @@
   "version": "1.0.0",
   "main": "dist/Storage.js",
   "devDependencies": {
-    "jest": "^27.0.6"
+    "@types/tap": "^15.0.5",
+    "tap": "^15.0.9"
   },
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js test/"
+    "test": "npx tap -J test/"
   },
   "keywords": [
     "Storage"
