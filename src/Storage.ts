@@ -1,3 +1,8 @@
+import { broadcastStorageEvent } from './StorageEvent.js';
+import { url } from './Utility/URL.js';
+
+export const instances: { type: 'local' | 'session', url: string, storage: Storage }[] = []
+
 /**
  * @link https://html.spec.whatwg.org/multipage/webstorage.html#the-storage-interface
  */
@@ -12,6 +17,12 @@ interface IWebStorage {
 
 export class Storage extends Object implements IWebStorage {
     #backerKMP = new Map<string, string>();
+
+    constructor(type: 'local' | 'session') {
+        super();
+
+        instances.push({ type, url: url(), storage: this });
+    }
 
     public get [Symbol.toStringTag](): string {
         return 'Storage';
@@ -75,7 +86,9 @@ export class Storage extends Object implements IWebStorage {
         this.#backerKMP.set(key, value);
 
         // TODO: 6. If reorder is true, then reorder this.
-        // TODO: 7. Broadcast this with key, oldValue, and value.
+        
+        // 7. Broadcast this with key, oldValue, and value.
+        broadcastStorageEvent(this, key, oldValue, value);
     }
 
     public removeItem(key: string): void | null {
@@ -92,18 +105,21 @@ export class Storage extends Object implements IWebStorage {
             return;
         }
 
-        // TODO: 2. Set oldValue to this's map[key].
-        // const oldValue = this.getItem(key);
+        // 2. Set oldValue to this's map[key].
+        const oldValue = this.getItem(key);
         // 3. Remove this's map[key].
         this.#backerKMP.delete(key);
 
         // TODO: 4. Reorder this.
-        // TODO: 5. Broadcast this with key, oldValue, and null.
+        
+        // 5. Broadcast this with key, oldValue, and null.
+        broadcastStorageEvent(this, key, oldValue, null);
     }
 
     public clear(): void {
         // 1. Clear this's map.
         this.#backerKMP.clear();
-        // TODO: 2. Broadcast this with null, null, and null.
+        // 2. Broadcast this with null, null, and null.
+        broadcastStorageEvent(this, null, null, null);
     }
 }
