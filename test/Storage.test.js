@@ -1,6 +1,10 @@
 import { Storage } from '../dist/Storage.js';
-import tap from 'tap';
 import { localStorage } from '../dist/localStorage.js';
+import { WindowEventTarget } from '../dist/StorageEvent.js';
+
+import tap from 'tap';
+import { once } from 'events';
+import { inspect } from 'util';
 
 const storage = new Storage();
 const toString = Object.prototype.toString;
@@ -104,4 +108,39 @@ tap.test('localStorage', (t) => {
         t.notSame(idx, -1, 'has Storage properties and functions');
         expectedProps.splice(idx, 1);
     }
+});
+
+// miserable experience lol
+tap.test('StorageEvent', async (t) => {
+    t.plan(3);
+
+    t.test('StorageEvent is emitted after <Storage>.setItem', async (t) => {
+        t.plan(1);
+        
+        const pr = once(WindowEventTarget, 'storage');
+
+        localStorage.setItem('test', 'value');
+
+        await pr.then(() => t.ok(true, 'storage event was emitted'));
+    });
+    
+    t.test('StorageEvent is emitted after <Storage>.removeItem', async (t) => {
+        t.plan(1);
+        
+        const pr = once(WindowEventTarget, 'storage');
+
+        localStorage.removeItem('test');
+
+        await pr.then(() => t.ok(true, 'storage event was emitted'));
+    });
+
+    t.test('StorageEvent is emitted after <Storage>.clear', async (t) => {
+        t.plan(1);
+        
+        const pr = once(WindowEventTarget, 'storage');
+
+        localStorage.clear();
+
+        await pr.then(() => t.ok(true, 'storage event was emitted'));
+    });
 });
