@@ -40,7 +40,11 @@ class StorageEvent extends Event implements IStorageEvent {
     /** Returns the Storage object that was affected. */
     storageArea: Storage | null = null;
 
-    constructor(type: 'local' | 'session', eventInitDict?: StorageEventInit) {
+    constructor(type: string, eventInitDict?: StorageEventInit) {
+        if (arguments.length < 1) {
+            throw new TypeError(`StorageEvent constructor: At least 1 argument required, but only ${arguments.length} passed`);
+        }
+
         super(type, eventInitDict);
         this.key = eventInitDict?.key ?? null;
         this.oldValue = eventInitDict?.oldValue ?? null;
@@ -50,7 +54,7 @@ class StorageEvent extends Event implements IStorageEvent {
     }
 
     initStorageEvent(
-        type: 'local' | 'session',
+        type: string,
         bubbles?: boolean,
         cancelable?: boolean,
         key?: string | null,
@@ -84,7 +88,7 @@ export const broadcastStorageEvent = (
     const { type, url } = instances.find(s => s.storage === storageItem && s.url === StorageURL())!;
     // 2a. type is storage's type
     // 2b. relevant settings object's origin is same origin with storage's relevant settings object's origin.
-    const remoteStorages = instances.filter(s => s.type !== type && s.url === url);
+    const remoteStorages = instances.filter(s => s.type === type && s.url === url);
     // TODO: 2c. and, if type is "session", whose relevant settings object's browsing session is storage's relevant settings object's browsing session.
 
     // 3. For each remoteStorage of remoteStorages: queue a global task on the DOM manipulation 
@@ -93,7 +97,7 @@ export const broadcastStorageEvent = (
     // oldValue initialized to oldValue, newValue initialized to newValue, url initialized to url, 
     // and storageArea initialized to remoteStorage.
     for (const remoteStorage of remoteStorages) {
-        WindowEventTarget.dispatchEvent(new StorageEvent(remoteStorage.type, {
+        WindowEventTarget.dispatchEvent(new StorageEvent('storage', {
             key,
             oldValue,
             newValue,
