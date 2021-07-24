@@ -1,6 +1,7 @@
 import { Storage } from './Storage.js';
 
 const hasOwn = Object.prototype.hasOwnProperty;
+const protoProps = ['length', 'key', 'getItem', 'setItem', 'removeItem', 'clear'];
 
 export const localStorage = new Proxy(new Storage('local'), {
     defineProperty: (target, prop, attributes) => {
@@ -9,7 +10,7 @@ export const localStorage = new Proxy(new Storage('local'), {
         }, attributes));
     },
     get: (target, prop) => {
-        if (hasOwn.call(Storage.prototype, prop)) {
+        if (protoProps.includes(prop as string)) {
             const storageProp = target[prop as keyof typeof target];
             return typeof storageProp === 'function'
                 ? storageProp.bind(target)
@@ -23,7 +24,7 @@ export const localStorage = new Proxy(new Storage('local'), {
         }
     },
     set: (target: Storage & { [key: string]: any }, prop, value) => {
-        if (hasOwn.call(target, prop)) {
+        if (protoProps.includes(prop as string)) {
             return false;
         } else {
             if (typeof prop === 'symbol') {

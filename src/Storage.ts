@@ -1,7 +1,18 @@
 import { broadcastStorageEvent } from './StorageEvent.js';
+import { DOMException } from './Utility/DOMException.js';
 import { url } from './Utility/URL.js';
 
-export const instances: { type: 'local' | 'session', url: string, storage: Storage }[] = []
+export const instances: { type: 'local' | 'session', url: string, storage: Storage }[] = [];
+
+const getQuota = (map: Map<string, string>): number => {
+    // Symbol keys do not count for limit, string "magic keys" do
+    let buffer = '';
+    for (const value of map.values()) {
+        buffer += value;
+    }
+
+    return Buffer.byteLength(buffer);
+}
 
 /**
  * @link https://html.spec.whatwg.org/multipage/webstorage.html#the-storage-interface
@@ -85,7 +96,9 @@ export class Storage extends Object implements IWebStorage {
             // reorder = false;
         }
 
-        // TODO: 4. If value cannot be stored, then throw a "QuotaExceededError" DOMException exception.
+        if (getQuota(this.#backerKMP) > 5_000_000) {
+            throw new DOMException('Quota exceeded', 'QuotaExceededError');
+        }
 
         // 5. Set this's map[key] to value.
         this.#backerKMP.set(key, value);
