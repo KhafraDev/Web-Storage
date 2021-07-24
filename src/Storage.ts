@@ -40,7 +40,7 @@ export class Storage extends Object implements IWebStorage {
 
     public key(index: number): string | null {
         // 1. If index is greater than or equal to this's map's size, then return null.
-        if (index > this.length) return null;
+        if (index >= this.length) return null;
 
         // 2. Let keys be the result of running get the keys on this's map.
         // - To get the keys of an ordered map, return a new ordered set whose items are each of the keys in the map’s entries. 
@@ -127,4 +127,17 @@ export class Storage extends Object implements IWebStorage {
         // 2. Broadcast this with null, null, and null.
         broadcastStorageEvent(this, null, null, null);
     }
+}
+
+for (const prop of ['length', 'clear', 'getItem', 'key', 'removeItem', 'setItem']) {
+    const descr: PropertyDescriptor = {
+        configurable: true,
+        enumerable: true
+    };
+
+    if (prop !== 'length') {
+        descr.value = Storage.prototype[prop as keyof Storage]
+    }
+
+    Object.defineProperty(Storage.prototype, prop, descr);
 }

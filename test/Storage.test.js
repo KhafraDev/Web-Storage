@@ -1,5 +1,6 @@
 import { Storage } from '../dist/Storage.js';
 import tap from 'tap';
+import { localStorage } from '../dist/localStorage.js';
 
 const storage = new Storage();
 const toString = Object.prototype.toString;
@@ -77,8 +78,30 @@ tap.test('<Storage> class tests', (t) => {
     });
 
     t.test('<Storage>.[Symbol.toStringTag]', (t) => {
-        t.plan(1);
+        t.plan(2);
 
         t.equal(toString.call(storage), '[object Storage]', 'Symbol.toStringTag is set');
+        t.equal(toString.call(Storage.prototype), '[object Storage]', 'Storage.prototype[Symbol.toStringTag]');
     });
+});
+
+tap.test('localStorage', (t) => {
+    t.plan(10);
+
+    storage.setItem('test', 'value');
+    storage.test2 = 'value2';
+
+    t.strictSame(Object.getOwnPropertyDescriptors(localStorage), {}, 'Object.getOwnPropertyDescriptors is an empty object');
+    t.strictSame(Object.getPrototypeOf(localStorage) === Storage.prototype, true, 'localStorage inherits its prototype from Storage');
+    t.strictSame(Object.keys(storage), Reflect.ownKeys(storage));
+    t.strictSame(Object.keys(storage).every(k => k === 'test' || k === 'test2'), true, 'Object.keys and Reflect.ownKeys work properly');
+
+    storage.clear();
+
+    const expectedProps = ['length', 'key', 'getItem', 'setItem', 'removeItem', 'clear'];
+    for (const k in localStorage) {
+        const idx = expectedProps.indexOf(k);
+        t.notSame(idx, -1, 'has Storage properties and functions');
+        expectedProps.splice(idx, 1);
+    }
 });
