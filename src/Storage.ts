@@ -51,6 +51,10 @@ export class Storage extends Object implements IWebStorage {
     }
 
     public key(index: number): string | null {
+        if (arguments.length < 1) {
+            throw new TypeError('Storage.key: At least 1 argument is required, but only 0 passed');
+        }
+
         // 1. If index is greater than or equal to this's map's size, then return null.
         if (index >= this.length) return null;
 
@@ -64,6 +68,10 @@ export class Storage extends Object implements IWebStorage {
     }
 
     public getItem(key: string): string | null {
+        if (arguments.length < 1) {
+            throw new TypeError('Storage.getItem: At least 1 argument is required, but only 0 passed');
+        }
+
         // standard browser implementation
         key = `${key}`;
         // 1. If this's map[key] does not exist, then return null.

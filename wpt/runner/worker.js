@@ -30,19 +30,14 @@ global.fetch = function fetch(file) {
 };
 
 if (workerData.initScript) {
-  runInThisContext(workerData.initScript, {
-    importModuleDynamically: async (r) => {
-      return await import(r);
-    }
-  });
+  runInThisContext(workerData.initScript);
 }
 
-runInThisContext(workerData.harness.code, {
-  filename: workerData.harness.filename,
-  importModuleDynamically: async (r) => {
-    return await import(r);
-  }
-});
+for (const harness of workerData.harness) {
+  runInThisContext(harness.code, {
+    filename: harness.filename
+  });
+}
 
 // eslint-disable-next-line no-undef
 add_result_callback((result) => {

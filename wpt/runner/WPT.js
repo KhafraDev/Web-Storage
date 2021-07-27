@@ -358,6 +358,7 @@ class WPTRunner {
       const absolutePath = spec.getAbsolutePath();
       const relativePath = spec.getRelativePath();
       const harnessPath = fixtures.path('wpt', 'resources', 'testharness.js');
+      const eventHarnessPath = fixtures.path('wpt', 'resources', 'eventTestHarness.js');
       const scriptsToRun = [];
       // Scripts specified with the `// META: script=` header
       if (meta.script) {
@@ -382,10 +383,16 @@ class WPTRunner {
           wptRunner: __filename,
           wptPath: this.path,
           initScript: this.initScript,
-          harness: {
-            code: fs.readFileSync(harnessPath, 'utf8'),
-            filename: harnessPath,
-          },
+          harness: [
+            {
+              code: fs.readFileSync(harnessPath, 'utf8'),
+              filename: harnessPath,
+            },
+            {
+              code: fs.readFileSync(eventHarnessPath, 'utf8'),
+              filename: eventHarnessPath
+            }
+          ],
           scriptsToRun,
         },
       });

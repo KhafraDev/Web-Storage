@@ -57,23 +57,30 @@ export class StorageEvent extends Event implements IStorageEvent {
 
     initStorageEvent(
         type: string,
-        bubbles?: boolean,
-        cancelable?: boolean,
-        key?: string | null,
-        oldValue?: string | null,
-        newValue?: string | null,
+        bubbles = false,
+        cancelable = false,
+        key: string | null = null,
+        oldValue: string | null = null,
+        newValue: string | null = null,
         url: string = '',
-        storageArea?: Storage | null
+        storageArea: Storage | null = null
     ): void {
-        WindowEventTarget.dispatchEvent(new StorageEvent(type, {
-            bubbles: bubbles ?? false,
-            cancelable: cancelable ?? false,
-            key: key ?? null,
-            oldValue: oldValue ?? null,
-            newValue: newValue ?? null,
-            url,
-            storageArea: storageArea ?? null
-        }));
+        if (arguments.length < 1) {
+            throw new TypeError('At least 1 argument required, but only 0 passed');
+        }
+        
+        Object.defineProperties(this, {
+            type: { value: `${type}` },
+            bubbles: { value: bubbles ?? false },
+            cancelable: { value: cancelable ?? false },
+            key: { value: key },
+            oldValue: { value: oldValue },
+            newValue: { value: newValue },
+            url: { value: url === null ? `${url}` : url },
+            storageArea: { value: storageArea }
+        });
+
+        WindowEventTarget.dispatchEvent(this);
     }
 }
 

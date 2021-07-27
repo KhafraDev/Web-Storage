@@ -1,5 +1,5 @@
 {
     "event_case_sensitive.window.js": {
-        "skip": "testStorages is not defined and storageString isn't a string"
+        "skip": "node doesn't have a global event target"
     }
 }
