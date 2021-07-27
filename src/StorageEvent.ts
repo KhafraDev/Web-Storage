@@ -28,7 +28,7 @@ interface IStorageEvent extends Event {
     ): void;
 }
 
-class StorageEvent extends Event implements IStorageEvent {
+export class StorageEvent extends Event implements IStorageEvent {
     /** Returns the key of the storage item being changed. */
     key: string | null = null;
     /** Returns the old value of the key of the storage item whose value is being changed. */
@@ -40,7 +40,7 @@ class StorageEvent extends Event implements IStorageEvent {
     /** Returns the Storage object that was affected. */
     storageArea: Storage | null = null;
 
-    constructor(type: string, eventInitDict?: StorageEventInit) {
+    constructor(type: string, eventInitDict = {} as StorageEventInit) {
         if (arguments.length < 1) {
             throw new TypeError(`StorageEvent constructor: At least 1 argument required, but only ${arguments.length} passed`);
         }
@@ -49,7 +49,9 @@ class StorageEvent extends Event implements IStorageEvent {
         this.key = eventInitDict?.key ?? null;
         this.oldValue = eventInitDict?.oldValue ?? null;
         this.newValue = eventInitDict?.newValue ?? null;
-        this.url = eventInitDict?.url ?? '';
+        this.url = typeof eventInitDict?.url === 'string' || eventInitDict?.url === null
+            ? `${eventInitDict.url}`
+            : eventInitDict?.url ?? '';
         this.storageArea = eventInitDict?.storageArea ?? null;
     }
 

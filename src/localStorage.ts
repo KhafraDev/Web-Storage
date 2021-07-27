@@ -3,7 +3,7 @@ import { Storage } from './Storage.js';
 const hasOwn = Object.prototype.hasOwnProperty;
 const protoProps = ['length', 'key', 'getItem', 'setItem', 'removeItem', 'clear'];
 
-export const localStorage = new Proxy(new Storage('local'), {
+export const localStorage: Storage = new Proxy(new Storage('local'), {
     defineProperty: (target, prop, attributes) => {
         return Reflect.defineProperty(target, prop, Object.assign({ 
             value: target[prop as keyof typeof target] 
@@ -35,6 +35,13 @@ export const localStorage = new Proxy(new Storage('local'), {
 
             return true;
         }
+    },
+    has: (target, prop) => {
+        if (typeof prop === 'symbol') return hasOwn.call(localStorage, prop);
+        if (protoProps.includes(prop)) return true;
+        if (target.getItem(prop) !== null) return true;
+
+        return false;
     },
     deleteProperty: (target, prop) => {
         const deleted = delete target[prop as keyof typeof target];
