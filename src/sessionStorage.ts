@@ -5,9 +5,12 @@ const protoProps = ['length', 'key', 'getItem', 'setItem', 'removeItem', 'clear'
 
 export const sessionStorage: Storage = new Proxy(new Storage('session'), {
     defineProperty: (target, prop, attributes) => {
-        const attr: PropertyDescriptor = attributes.configurable && 'value' in attributes
-            ? attributes
-            : { value: attributes.value, configurable: true };
+        const attr: PropertyDescriptor = {
+            value: attributes.value,
+            configurable: typeof prop !== 'symbol',
+            writable: typeof prop !== 'symbol',
+            enumerable: typeof prop !== 'symbol'
+        };
 
         if (attr.value?.toString) {
             if (typeof attr.value.toString === 'function') {
@@ -20,8 +23,12 @@ export const sessionStorage: Storage = new Proxy(new Storage('session'), {
             Object.defineProperty(target, prop, attr);
         }
 
-        target.setItem(prop as string, attributes.value);
-        return target.getItem(prop as string) !== null;
+        if (typeof prop !== 'symbol') {
+            target.setItem(prop as string, attributes.value);
+            return target.getItem(prop as string) !== null;
+        } else {
+            return true;
+        }
     },
     get: (target, prop) => {
         if (protoProps.includes(prop as string)) {
@@ -56,12 +63,15 @@ export const sessionStorage: Storage = new Proxy(new Storage('session'), {
         return false;
     },
     deleteProperty: (target, prop) => {
-        const deleted = delete target[prop as keyof typeof target];
+        // returning false here throws a TypeError due to the spec.
+        // however returning true for properties that aren't configurable
+        // also throws. So there's nothing I can really do about it.
+        
         if (typeof prop === 'symbol') {
-            return deleted;
+            return false;
         } else {
             target.removeItem(prop);
-            return deleted;
+            return delete target[prop as keyof typeof target];
         }
     },
     ownKeys: (target) => {
@@ -74,7 +84,10 @@ export const sessionStorage: Storage = new Proxy(new Storage('session'), {
 
         return keys;
     },
-    getOwnPropertyDescriptor: () => {
-        return undefined;
+    getOwnPropertyDescriptor: (target, prop) => {
+        if (typeof prop === 'symbol') return Reflect.getOwnPropertyDescriptor(target, prop);
+        if (protoProps.includes(prop)) return undefined;
+
+        return Reflect.getOwnPropertyDescriptor(target, prop)
     }
 });

@@ -8,11 +8,8 @@
   "description": "localStorage and sessionStorage in NodeJS",
   "version": "1.0.0",
   "main": "dist/Storage.js",
-  "devDependencies": {
-    "@types/tap": "^15.0.5"
-  },
   "scripts": {
-    "test": "npx tap -J test/"
+    "test": "tsc && node wpt/test.js"
   },
   "keywords": [
     "Storage"
