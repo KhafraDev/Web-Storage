@@ -6,12 +6,13 @@ import { localStorage } from '../../dist/localStorage.js';
 import { sessionStorage } from '../../dist/sessionStorage.js';
 import { DOMException } from '../../dist/Utility/DOMException.js';
 import { StorageEvent } from '../../dist/StorageEvent.js';
+import { Storage } from '../../dist/Storage.js';
 
+globalThis.Storage = Storage;
 globalThis.localStorage = localStorage;
 globalThis.sessionStorage = sessionStorage;
 globalThis.DOMException = DOMException;
 globalThis.StorageEvent = StorageEvent;
-
 globalThis.window = globalThis;
 
 const resource = new ResourceLoader(workerData.wptPath);

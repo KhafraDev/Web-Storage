@@ -94,7 +94,7 @@ export const broadcastStorageEvent = (
 ) => {
     // 1. Let url be storage's relevant global object's associated Document's URL.
     // 2. Let remoteStorages be all Storage objects excluding storage whose:
-    const { type, url } = instances.find(s => s.storage === storageItem && s.url === StorageURL())!;
+    const { type, url } = instances.find(s => storageItem.type === s.type && s.url === StorageURL())!;
     // 2a. type is storage's type
     // 2b. relevant settings object's origin is same origin with storage's relevant settings object's origin.
     const remoteStorages = instances.filter(s => s.type === type && s.url === url);

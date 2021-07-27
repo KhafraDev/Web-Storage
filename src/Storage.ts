@@ -27,7 +27,8 @@ interface IWebStorage {
 }
 
 export class Storage extends Object implements IWebStorage {
-    #backerKMP = new Map<string, string>();
+    private backerKMP = new Map<string, string>();
+    #type: string | null = null;
     [key: string]: any;
 
     constructor(type: 'local' | 'session') {
@@ -37,8 +38,13 @@ export class Storage extends Object implements IWebStorage {
         }
 
         super();
+        this.#type = type;
 
         instances.push({ type, url: url(), storage: this });
+    }
+
+    public get type() {
+        return this.#type;
     }
 
     public get [Symbol.toStringTag](): string {
@@ -47,7 +53,7 @@ export class Storage extends Object implements IWebStorage {
 
     public get length(): number {
         // "The length getter steps are to return this's map's size."
-        return this.#backerKMP.size;
+        return this.backerKMP.size;
     }
 
     public key(index: number): string | null {
@@ -61,7 +67,7 @@ export class Storage extends Object implements IWebStorage {
         // 2. Let keys be the result of running get the keys on this's map.
         // - To get the keys of an ordered map, return a new ordered set whose items are each of the keys in the map’s entries. 
         // - An ordered set is a list with the additional semantic that it must not contain the same item twice. 
-        const keys = [...this.#backerKMP.keys()];
+        const keys = [...this.backerKMP.keys()];
         
         // 3. Return keys[index].
         return keys[index]!;
@@ -75,10 +81,10 @@ export class Storage extends Object implements IWebStorage {
         // standard browser implementation
         key = `${key}`;
         // 1. If this's map[key] does not exist, then return null.
-        if (!this.#backerKMP.has(key)) return null;
+        if (!this.backerKMP.has(key)) return null;
         
         // 2. Return this's map[key].
-        return this.#backerKMP.get(key)!;
+        return this.backerKMP.get(key)!;
     }
 
     public setItem(key: string, value: string): void {
@@ -95,7 +101,7 @@ export class Storage extends Object implements IWebStorage {
 
         // 3. If this's map[key] exists:
         // - An ordered map contains an entry with a given key if there exists an entry with that key.
-        const mapKeyExists = [...this.#backerKMP.keys()].includes(key);
+        const mapKeyExists = [...this.backerKMP.keys()].includes(key);
         if (mapKeyExists) {
             // 3a. Set oldValue to this's map[key].
             oldValue = this.getItem(key);
@@ -105,12 +111,12 @@ export class Storage extends Object implements IWebStorage {
             // reorder = false;
         }
 
-        if (getQuota(this.#backerKMP) > 5_000_000) {
+        if (getQuota(this.backerKMP) > 5_000_000) {
             throw new DOMException('Quota exceeded', 'QuotaExceededError');
         }
 
         // 5. Set this's map[key] to value.
-        this.#backerKMP.set(key, value);
+        this.backerKMP.set(key, value);
 
         // TODO: 6. If reorder is true, then reorder this.
         
@@ -126,7 +132,7 @@ export class Storage extends Object implements IWebStorage {
 
         // 1. If this's map[key] does not exist, then return null.
         // - An ordered map contains an entry with a given key if there exists an entry with that key.
-        const mapKeyExists = [...this.#backerKMP.keys()].includes(key);
+        const mapKeyExists = [...this.backerKMP.keys()].includes(key);
         if (!mapKeyExists) {
             // Browsers do not return null when a key is non-existent (Chrome/Firefox).
             return;
@@ -135,7 +141,7 @@ export class Storage extends Object implements IWebStorage {
         // 2. Set oldValue to this's map[key].
         const oldValue = this.getItem(key);
         // 3. Remove this's map[key].
-        this.#backerKMP.delete(key);
+        this.backerKMP.delete(key);
 
         // TODO: 4. Reorder this.
         
@@ -144,9 +150,9 @@ export class Storage extends Object implements IWebStorage {
     }
 
     public clear(): void {
-        const keys = Array.from(this.#backerKMP.keys());
+        const keys = Array.from(this.backerKMP.keys());
         // 1. Clear this's map.
-        this.#backerKMP.clear();
+        this.backerKMP.clear();
         for (const key of keys)
             delete this[key as string & keyof typeof Storage];
         // 2. Broadcast this with null, null, and null.

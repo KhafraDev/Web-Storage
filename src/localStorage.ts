@@ -25,10 +25,7 @@ export const localStorage: Storage = new Proxy(new Storage('local'), {
     },
     get: (target, prop) => {
         if (protoProps.includes(prop as string)) {
-            const storageProp = target[prop as keyof typeof target];
-            return typeof storageProp === 'function'
-                ? storageProp.bind(target)
-                : storageProp;
+            return target[prop as keyof typeof target];
         } else {
             if (typeof prop === 'symbol') {
                 return target[prop as keyof typeof target];
@@ -39,7 +36,8 @@ export const localStorage: Storage = new Proxy(new Storage('local'), {
     },
     set: (target: Storage & { [key: string]: any }, prop, value) => {
         if (protoProps.includes(prop as string)) {
-            return false;
+            target.setItem(prop as string, value);
+            return target.getItem(prop as string) !== null;
         } else {
             if (typeof prop === 'symbol') {
                 target[prop as unknown as Exclude<keyof Storage, 'length' | SymbolConstructor['toStringTag']>] = value; 
@@ -76,8 +74,7 @@ export const localStorage: Storage = new Proxy(new Storage('local'), {
 
         return keys;
     },
-    getOwnPropertyDescriptor: (target, prop) => {
-        if (prop === 'undefined' && !hasOwn.call(target, prop)) return undefined;
-        return { enumerable: true, configurable: true };
+    getOwnPropertyDescriptor: () => {
+        return undefined;
     }
 });
