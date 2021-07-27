@@ -28,6 +28,7 @@ interface IWebStorage {
 
 export class Storage extends Object implements IWebStorage {
     #backerKMP = new Map<string, string>();
+    [key: string]: any;
 
     constructor(type: 'local' | 'session') {
         // we need to be able to construct localStorage and sessionStorage instances
@@ -135,8 +136,11 @@ export class Storage extends Object implements IWebStorage {
     }
 
     public clear(): void {
+        const keys = Array.from(this.#backerKMP.keys());
         // 1. Clear this's map.
         this.#backerKMP.clear();
+        for (const key of keys)
+            delete this[key as string & keyof typeof Storage];
         // 2. Broadcast this with null, null, and null.
         broadcastStorageEvent(this, null, null, null);
     }

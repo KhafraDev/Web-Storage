@@ -5,9 +5,23 @@ const protoProps = ['length', 'key', 'getItem', 'setItem', 'removeItem', 'clear'
 
 export const localStorage: Storage = new Proxy(new Storage('local'), {
     defineProperty: (target, prop, attributes) => {
-        return Reflect.defineProperty(target, prop, Object.assign({ 
-            value: target[prop as keyof typeof target] 
-        }, attributes));
+        const attr: PropertyDescriptor = attributes.configurable && 'value' in attributes
+            ? attributes
+            : { value: attributes.value, configurable: true };
+
+        if (attr.value?.toString) {
+            if (typeof attr.value.toString === 'function') {
+                attr.value = attr.value.toString();
+                Object.defineProperty(target, prop, attr);
+            } else {
+                throw new TypeError(`can't convert value to string`);
+            }
+        } else {
+            Object.defineProperty(target, prop, attr);
+        }
+
+        target.setItem(prop as string, attributes.value);
+        return target.getItem(prop as string) !== null;
     },
     get: (target, prop) => {
         if (protoProps.includes(prop as string)) {
@@ -19,7 +33,7 @@ export const localStorage: Storage = new Proxy(new Storage('local'), {
             if (typeof prop === 'symbol') {
                 return target[prop as keyof typeof target];
             } else {
-                return target.getItem(prop);
+                return target[prop as keyof typeof target] ?? target.getItem(prop) ?? undefined;
             }
         }
     },
