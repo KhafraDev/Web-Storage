@@ -65,7 +65,9 @@ export class StorageEvent extends Event implements IStorageEvent {
         url: string = '',
         storageArea: Storage | null = null
     ): void {
-        if (arguments.length < 1) {
+        if (!(this instanceof StorageEvent)) {
+            throw new TypeError(`'initStorageEvent' called on an object that does not implement interface StorageEvent.`);
+        } else if (arguments.length < 1) {
             throw new TypeError('At least 1 argument required, but only 0 passed');
         }
         
