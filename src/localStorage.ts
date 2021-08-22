@@ -1,9 +1,10 @@
-import { Storage } from './Storage.js';
+import { create, Storage } from './Storage.js';
 
 const hasOwn = Object.prototype.hasOwnProperty;
 const protoProps = ['length', 'key', 'getItem', 'setItem', 'removeItem', 'clear'];
 
-export const localStorage: Storage = new Proxy(new Storage('local'), {
+/** @type {Storage} */
+export const localStorage: Storage = new Proxy(create('local'), {
     defineProperty: (target, prop, attributes) => {
         const attr: PropertyDescriptor = {
             value: attributes.value,

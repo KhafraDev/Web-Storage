@@ -2,7 +2,12 @@ import { broadcastStorageEvent } from './StorageEvent.js';
 import { DOMException } from './Utility/DOMException.js';
 import { url } from './Utility/URL.js';
 
-export const instances: { type: 'local' | 'session', url: string, storage: Storage }[] = [];
+interface State {
+    backerKMP: Map<string, string>
+    type: 'local' | 'session' | null
+}
+
+export const instances: { url: string, storage: Storage }[] = [];
 
 const getQuota = (map: Map<string, string>): number => {
     // Symbol keys do not count for limit, string "magic keys" do
@@ -13,6 +18,9 @@ const getQuota = (map: Map<string, string>): number => {
 
     return Buffer.byteLength(buffer);
 }
+
+export const kState = Symbol('webStorage-khafra');
+export const isStorage = (s: Storage): s is Storage => kState in s;
 
 /**
  * @link https://html.spec.whatwg.org/multipage/webstorage.html#the-storage-interface
@@ -27,24 +35,23 @@ interface IWebStorage {
 }
 
 export class Storage extends Object implements IWebStorage {
-    private backerKMP = new Map<string, string>();
-    #type: string | null = null;
     [key: string]: any;
 
-    constructor(type: 'local' | 'session') {
+    [kState]: State = {
+        backerKMP: new Map<string, string>(),
+        type: null
+    }
+
+    constructor() {
         // we need to be able to construct localStorage and sessionStorage instances
         if (typeof localStorage !== 'undefined' && typeof sessionStorage !== 'undefined') {
             throw new TypeError('Illegal constructor');
         }
 
         super();
-        this.#type = type;
+        this[kState].type = null;
 
-        instances.push({ type, url: url(), storage: this });
-    }
-
-    public get type() {
-        return this.#type;
+        instances.push({ url: url(), storage: this });
     }
 
     public get [Symbol.toStringTag](): string {
@@ -53,11 +60,13 @@ export class Storage extends Object implements IWebStorage {
 
     public get length(): number {
         // "The length getter steps are to return this's map's size."
-        return this.backerKMP.size;
+        return this[kState].backerKMP.size;
     }
 
     public key(index: number): string | null {
-        if (arguments.length < 1) {
+        if (!isStorage(this)) {
+            throw new TypeError(`'key' called on an object that does not implement interface Storage.`);
+        } else if (arguments.length < 1) {
             throw new TypeError('Storage.key: At least 1 argument is required, but only 0 passed');
         }
 
@@ -67,29 +76,34 @@ export class Storage extends Object implements IWebStorage {
         // 2. Let keys be the result of running get the keys on this's map.
         // - To get the keys of an ordered map, return a new ordered set whose items are each of the keys in the map’s entries. 
         // - An ordered set is a list with the additional semantic that it must not contain the same item twice. 
-        const keys = [...this.backerKMP.keys()];
+        const keys = [...this[kState].backerKMP.keys()];
         
         // 3. Return keys[index].
         return keys[index]!;
     }
 
     public getItem(key: string): string | null {
-        if (arguments.length < 1) {
+        if (!isStorage(this)) {
+            throw new TypeError(`'getItem' called on an object that does not implement interface Storage.`);
+        } else if (arguments.length < 1) {
             throw new TypeError('Storage.getItem: At least 1 argument is required, but only 0 passed');
         }
 
         // standard browser implementation
         key = `${key}`;
         // 1. If this's map[key] does not exist, then return null.
-        if (!this.backerKMP.has(key)) return null;
+        if (!this[kState].backerKMP.has(key)) return null;
         
         // 2. Return this's map[key].
-        return this.backerKMP.get(key)!;
+        return this[kState].backerKMP.get(key)!;
     }
 
     public setItem(key: string, value: string): void {
-        if (arguments.length < 2)
+        if (!isStorage(this)) {
+            throw new TypeError(`'setItem' called on an object that does not implement interface Storage.`);
+        } else if (arguments.length < 2) {
             throw new TypeError('Storage.setItem: At least 2 arguments required, but only 1 passed');
+        }
 
         key = `${key}`;
         value = `${value}`;
@@ -101,7 +115,7 @@ export class Storage extends Object implements IWebStorage {
 
         // 3. If this's map[key] exists:
         // - An ordered map contains an entry with a given key if there exists an entry with that key.
-        const mapKeyExists = [...this.backerKMP.keys()].includes(key);
+        const mapKeyExists = [...this[kState].backerKMP.keys()].includes(key);
         if (mapKeyExists) {
             // 3a. Set oldValue to this's map[key].
             oldValue = this.getItem(key);
@@ -111,12 +125,12 @@ export class Storage extends Object implements IWebStorage {
             // reorder = false;
         }
 
-        if (getQuota(this.backerKMP) > 5_000_000) {
+        if (getQuota(this[kState].backerKMP) > 5_000_000) {
             throw new DOMException('Quota exceeded', 'QuotaExceededError');
         }
 
         // 5. Set this's map[key] to value.
-        this.backerKMP.set(key, value);
+        this[kState].backerKMP.set(key, value);
 
         // TODO: 6. If reorder is true, then reorder this.
         
@@ -125,14 +139,17 @@ export class Storage extends Object implements IWebStorage {
     }
 
     public removeItem(key: string): void | null {
-        if (arguments.length < 1)
+        if (!isStorage(this)) {
+            throw new TypeError(`'removeItem' called on an object that does not implement interface Storage.`);
+        } else if (arguments.length < 1) {
             throw new TypeError('Storage.removeItem: At least 1 argument required, but only 0 passed');
-            
+        }
+
         key = `${key}`;
 
         // 1. If this's map[key] does not exist, then return null.
         // - An ordered map contains an entry with a given key if there exists an entry with that key.
-        const mapKeyExists = [...this.backerKMP.keys()].includes(key);
+        const mapKeyExists = [...this[kState].backerKMP.keys()].includes(key);
         if (!mapKeyExists) {
             // Browsers do not return null when a key is non-existent (Chrome/Firefox).
             return;
@@ -141,7 +158,7 @@ export class Storage extends Object implements IWebStorage {
         // 2. Set oldValue to this's map[key].
         const oldValue = this.getItem(key);
         // 3. Remove this's map[key].
-        this.backerKMP.delete(key);
+        this[kState].backerKMP.delete(key);
 
         // TODO: 4. Reorder this.
         
@@ -150,9 +167,13 @@ export class Storage extends Object implements IWebStorage {
     }
 
     public clear(): void {
-        const keys = Array.from(this.backerKMP.keys());
+        if (!isStorage(this)) {
+            throw new TypeError(`'clear' called on an object that does not implement interface Storage.`);
+        }
+
+        const keys = Array.from(this[kState].backerKMP.keys());
         // 1. Clear this's map.
-        this.backerKMP.clear();
+        this[kState].backerKMP.clear();
         for (const key of keys)
             delete this[key as string & keyof typeof Storage];
         // 2. Broadcast this with null, null, and null.
@@ -171,4 +192,10 @@ for (const prop of ['length', 'clear', 'getItem', 'key', 'removeItem', 'setItem'
     }
 
     Object.defineProperty(Storage.prototype, prop, descr);
+}
+
+export const create = (type: 'local' | 'session'): Storage => {
+    const storage = new Storage();
+    storage[kState].type = type;
+    return storage;
 }
