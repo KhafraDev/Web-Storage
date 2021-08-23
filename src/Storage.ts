@@ -34,7 +34,7 @@ interface IWebStorage {
     clear(): void;
 }
 
-export class Storage extends Object implements IWebStorage {
+export class Storage implements IWebStorage {
     [key: string]: any;
 
     [kState]: State = {
@@ -48,7 +48,6 @@ export class Storage extends Object implements IWebStorage {
             throw new TypeError('Illegal constructor');
         }
 
-        super();
         this[kState].type = null;
 
         instances.push({ url: url(), storage: this });
