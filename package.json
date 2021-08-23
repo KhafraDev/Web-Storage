@@ -1,19 +1,19 @@
 {
-  "dependencies": {
-    "@types/node": "^16.4.1",
-    "typescript": "^4.3.5"
-  },
   "type": "module",
   "name": "storage",
   "description": "localStorage and sessionStorage in NodeJS",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "dist/Storage.js",
   "scripts": {
-    "test": "tsc && node wpt/test.js"
+    "test": "npx tsc && node wpt/test.js"
   },
   "keywords": [
     "Storage"
   ],
   "author": "KhafraDev",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^16.7.1",
+    "typescript": "^4.3.5"
+  }
 }

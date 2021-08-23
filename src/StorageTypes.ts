@@ -1,10 +1,9 @@
 import { create, Storage } from './Storage.js';
 
-const hasOwn = Object.prototype.hasOwnProperty;
 const protoProps = ['length', 'key', 'getItem', 'setItem', 'removeItem', 'clear'];
 
 /** @type {Storage} */
-export const sessionStorage: Storage = new Proxy(create('session'), {
+export const ProxyHandler: ProxyHandler<Storage> = {
     defineProperty: (target, prop, attributes) => {
         const attr: PropertyDescriptor = {
             value: attributes.value,
@@ -57,23 +56,21 @@ export const sessionStorage: Storage = new Proxy(create('session'), {
         }
     },
     has: (target, prop) => {
-        if (typeof prop === 'symbol') return hasOwn.call(localStorage, prop);
+        if (typeof prop === 'symbol') 
+            return Object.getOwnPropertySymbols(target).includes(prop);
         if (protoProps.includes(prop)) return true;
         if (target.getItem(prop) !== null) return true;
 
         return false;
     },
     deleteProperty: (target, prop) => {
-        // returning false here throws a TypeError due to the spec.
-        // however returning true for properties that aren't configurable
-        // also throws. So there's nothing I can really do about it.
-        
-        if (typeof prop === 'symbol') {
-            return false;
-        } else {
+        delete target[prop as keyof typeof target];
+
+        if (typeof prop === 'string') {
             target.removeItem(prop);
-            return delete target[prop as keyof typeof target];
         }
+
+        return true;
     },
     ownKeys: (target) => {
         const keys: string[] = [];
@@ -91,4 +88,9 @@ export const sessionStorage: Storage = new Proxy(create('session'), {
 
         return Reflect.getOwnPropertyDescriptor(target, prop)
     }
-});
+}
+
+/** @type {Storage} */
+export const localStorage: Storage = new Proxy(create('local'), ProxyHandler);
+/** @type {Storage} */
+export const sessionStorage: Storage = new Proxy(create('session'), ProxyHandler);

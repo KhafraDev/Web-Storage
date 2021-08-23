@@ -181,19 +181,6 @@ export class Storage extends Object implements IWebStorage {
     }
 }
 
-for (const prop of ['length', 'clear', 'getItem', 'key', 'removeItem', 'setItem']) {
-    const descr: PropertyDescriptor = {
-        configurable: true,
-        enumerable: true
-    };
-
-    if (prop !== 'length') {
-        descr.value = Storage.prototype[prop as keyof Storage]
-    }
-
-    Object.defineProperty(Storage.prototype, prop, descr);
-}
-
 export const create = (type: 'local' | 'session'): Storage => {
     const storage = new Storage();
     storage[kState].type = type;
