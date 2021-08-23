@@ -96,10 +96,18 @@ export const broadcastStorageEvent = (
 ) => {
     // 1. Let url be storage's relevant global object's associated Document's URL.
     // 2. Let remoteStorages be all Storage objects excluding storage whose:
-    const { storage, url } = instances.find(s => storageItem[kState].type === s.storage[kState].type && s.url === StorageURL())!;
-    // 2a. type is storage's type
-    // 2b. relevant settings object's origin is same origin with storage's relevant settings object's origin.
-    const remoteStorages = instances.filter(s => s.storage[kState].type === storage[kState].type && s.url === url);
+    //      2a. type is storage's type
+    //      2b. relevant settings object's origin is same origin with storage's relevant settings object's origin.
+    const storage = instances.find(s => 
+        storageItem[kState].type === s[kState].type && 
+        s[kState].url === StorageURL()
+    )!;
+
+    const remoteStorages = instances.filter(s => 
+        s[kState].type === storage[kState].type && 
+        s[kState].url === storage[kState].url
+    );
+
     // TODO: 2c. and, if type is "session", whose relevant settings object's browsing session is storage's relevant settings object's browsing session.
 
     // 3. For each remoteStorage of remoteStorages: queue a global task on the DOM manipulation 
@@ -112,7 +120,7 @@ export const broadcastStorageEvent = (
             key,
             oldValue,
             newValue,
-            storageArea: remoteStorage.storage
+            storageArea: remoteStorage
         }));
     }
 }

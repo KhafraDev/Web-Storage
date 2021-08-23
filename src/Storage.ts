@@ -4,10 +4,11 @@ import { url } from './Utility/URL.js';
 
 interface State {
     backerKMP: Map<string, string>
-    type: 'local' | 'session' | null
+    type: 'local' | 'session' | null,
+    url: string
 }
 
-export const instances: { url: string, storage: Storage }[] = [];
+export const instances: Storage[] = [];
 
 const getQuota = (map: Map<string, string>): number => {
     // Symbol keys do not count for limit, string "magic keys" do
@@ -37,27 +38,21 @@ interface IWebStorage {
 export class Storage implements IWebStorage {
     [key: string]: any;
 
-    [kState]: State = {
-        backerKMP: new Map<string, string>(),
-        type: null
-    }
+    [kState]!: State;
 
     constructor() {
-        // we need to be able to construct localStorage and sessionStorage instances
-        if (typeof localStorage !== 'undefined' && typeof sessionStorage !== 'undefined') {
-            throw new TypeError('Illegal constructor');
-        }
-
-        this[kState].type = null;
-
-        instances.push({ url: url(), storage: this });
+        throw new TypeError('Illegal constructor.');
     }
 
     public get [Symbol.toStringTag](): string {
-        return 'Storage';
+        return 'Storage'; // this does not need brand checks
     }
 
     public get length(): number {
+        if (!isStorage(this)) { // to trigger -> localStorage.__proto__.length
+            throw new TypeError(`'length' called on an object that does not implement interface Storage.`);
+        }
+
         // "The length getter steps are to return this's map's size."
         return this[kState].backerKMP.size;
     }
@@ -181,7 +176,14 @@ export class Storage implements IWebStorage {
 }
 
 export const create = (type: 'local' | 'session'): Storage => {
-    const storage = new Storage();
-    storage[kState].type = type;
+    // inspired by Deno <3
+    // https://github.com/denoland/deno/blob/a0285e2eb88f6254f6494b0ecd1878db3a3b2a58/ext/webidl/00_webidl.js#L902
+    const storage: Storage = Object.create(Storage.prototype);
+    storage[kState] ??= {
+        backerKMP: new Map<string, string>(),
+        type: type,
+        url: url()
+    } as State;
+    instances.push(storage);
     return storage;
 }
