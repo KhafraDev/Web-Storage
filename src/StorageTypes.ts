@@ -2,8 +2,7 @@ import { create, Storage } from './Storage.js';
 
 const protoProps = ['length', 'key', 'getItem', 'setItem', 'removeItem', 'clear'];
 
-/** @type {Storage} */
-export const ProxyHandler: ProxyHandler<Storage> = {
+const ProxyHandler: ProxyHandler<Storage> = {
     defineProperty: (target, prop, attributes) => {
         const attr: PropertyDescriptor = {
             value: attributes.value,
