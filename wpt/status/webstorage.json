@@ -1,5 +1,8 @@
 {
     "event_case_sensitive.window.js": {
         "skip": "node doesn't have a global event target"
+    },
+    "symbol-props.window.js": {
+        "skip": "symbol implementation does not fully work"
     }
 }

@@ -64,6 +64,15 @@ export class Storage implements IWebStorage {
             throw new TypeError('Storage.key: At least 1 argument is required, but only 0 passed');
         }
 
+        // these 2 conditions are not documented in the spec, however
+        // storage_key.window.js WPT test checks for both conditions
+        const max = 2 ** 32;
+        if (index >= max) {
+            index %= max;
+        } else if (index < 0) {
+            return null;
+        }
+
         // 1. If index is greater than or equal to this's map's size, then return null.
         if (index >= this.length) return null;
 

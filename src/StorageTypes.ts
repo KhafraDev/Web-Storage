@@ -1,9 +1,9 @@
-import { create, Storage } from './Storage.js';
+import { create, kState, Storage } from './Storage.js';
 
 const protoProps = ['length', 'key', 'getItem', 'setItem', 'removeItem', 'clear'];
 
 const ProxyHandler: ProxyHandler<Storage> = {
-    defineProperty: (target, prop, attributes) => {
+    defineProperty(target, prop, attributes) {
         const attr: PropertyDescriptor = {
             value: attributes.value,
             configurable: typeof prop !== 'symbol',
@@ -29,7 +29,7 @@ const ProxyHandler: ProxyHandler<Storage> = {
             return true;
         }
     },
-    get: (target, prop) => {
+    get(target, prop) {
         if (protoProps.includes(prop as string)) {
             return target[prop as keyof typeof target];
         } else {
@@ -40,10 +40,10 @@ const ProxyHandler: ProxyHandler<Storage> = {
             }
         }
     },
-    set: (target: Storage & { [key: string]: any }, prop, value) => {
-        if (protoProps.includes(prop as string)) {
-            target.setItem(prop as string, value);
-            return target.getItem(prop as string) !== null;
+    set(target: Storage & { [key: string]: any }, prop, value) {
+        if (typeof prop === 'string' && protoProps.includes(prop)) {
+            target.setItem(prop, value);
+            return target.getItem(prop) !== null;
         } else {
             if (typeof prop === 'symbol') {
                 target[prop as unknown as Exclude<keyof Storage, 'length' | SymbolConstructor['toStringTag']>] = value; 
@@ -54,7 +54,7 @@ const ProxyHandler: ProxyHandler<Storage> = {
             return true;
         }
     },
-    has: (target, prop) => {
+    has(target, prop) {
         if (typeof prop === 'symbol') 
             return Object.getOwnPropertySymbols(target).includes(prop);
         if (protoProps.includes(prop)) return true;
@@ -62,7 +62,7 @@ const ProxyHandler: ProxyHandler<Storage> = {
 
         return false;
     },
-    deleteProperty: (target, prop) => {
+    deleteProperty(target, prop) {
         delete target[prop as keyof typeof target];
 
         if (typeof prop === 'string') {
@@ -71,21 +71,27 @@ const ProxyHandler: ProxyHandler<Storage> = {
 
         return true;
     },
-    ownKeys: (target) => {
-        const keys: string[] = [];
-        let i = 0, key: string | null = null;
-
-        while ((key = target.key(i++)) !== null) {
-            keys.push(key);
+    ownKeys(target) {
+        return [...target[kState].backerKMP.keys()];
+    },
+    getOwnPropertyDescriptor(target, prop) {
+        if (arguments.length === 1) {
+            return undefined;
+        } else if (prop in target) {
+            return undefined;
         }
 
-        return keys;
-    },
-    getOwnPropertyDescriptor: (target, prop) => {
-        if (typeof prop === 'symbol') return Reflect.getOwnPropertyDescriptor(target, prop);
-        if (protoProps.includes(prop)) return undefined;
-
-        return Reflect.getOwnPropertyDescriptor(target, prop)
+        const value = target.getItem(prop as string);
+        if (value === null) {
+            return undefined;
+        }
+        
+        return {
+            value,
+            enumerable: true,
+            configurable: true,
+            writable: true
+        }
     }
 }
 
