@@ -69,8 +69,9 @@ export const DOMException: typeof IDOMException = (() => {
         
         port.postMessage(ab, [ab, ab]);
     } catch (err) {
-        if (err.constructor.name === 'DOMException') {
-            return err.constructor;
-        }
+        return (err as Error).constructor as typeof IDOMException;
     }
+
+    // so typescript doesn't bother us
+    return {} as typeof IDOMException;
 })();

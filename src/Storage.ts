@@ -185,14 +185,18 @@ export class Storage implements IWebStorage {
 }
 
 export const create = (type: 'local' | 'session'): Storage => {
-    // inspired by Deno <3
-    // https://github.com/denoland/deno/blob/a0285e2eb88f6254f6494b0ecd1878db3a3b2a58/ext/webidl/00_webidl.js#L902
-    const storage: Storage = Object.create(Storage.prototype);
-    storage[kState] ??= {
-        backerKMP: new Map<string, string>(),
-        type: type,
-        url: url()
-    } as State;
+    const storage: Storage = Reflect.construct(
+        function (this: Storage) {
+            this[kState] = {
+                backerKMP: new Map<string, string>(),
+                type: type,
+                url: url()
+            };
+        },
+        [],
+        Storage
+    );
+    
     instances.push(storage);
     return storage;
 }
